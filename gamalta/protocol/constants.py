@@ -78,7 +78,7 @@ CMD_SCENE_ACTIVATE = 0x72
 CMD_UNKNOWN_56 = 0x56
 """Unknown - seen with values 01 and 02, possibly pump/accessory control"""
 
-# Scene/Schedule Query Commands
+# Scene/Schedule Commands
 CMD_SCENE_LIST = 0x64
 """Query scene list - payload [01] [slot], returns scene info"""
 
@@ -91,9 +91,28 @@ CMD_SCENE_NAME = 0x68
 CMD_SCENE_POINTS = 0x70
 """Query number of points in a scene's 24h schedule - payload [01] [scene_id]"""
 
-CMD_SCHEDULE_POINT = 0x62
+CMD_QUERY_SCHEDULE_POINT = 0x62
 """Query schedule point data - payload [02] [scene_id] [point_index 1-5]
-Response contains time ranges and RGBWC values for each segment of the 24h cycle"""
+Response: time ranges and RGBWC values for each segment of the 24h cycle"""
+
+CMD_START_SCENE_EDIT = 0x74
+"""Start editing a scene - payload [01] [scene_id]
+Must be called before writing schedule points"""
+
+CMD_WRITE_SCHEDULE_POINT = 0x60
+"""Write schedule point data - payload format (12 bytes total):
+  [scene_id] [point_idx] [start_h] [start_m] [end_h] [end_m] [R] [G] [B] [W] [C] [brightness]
+  
+Example for 5AM node (red color):
+  0B 01 14 00 05 00 FF 00 00 00 00 64
+  = Scene 0x0B, Point 1, 20:00-05:00, RGB(255,0,0), W=0, C=0, 100% brightness
+  
+Point 0xFF is used as end marker to finalize the scene."""
+
+CMD_WRITE_SCENE_META = 0x6C
+"""Write scene metadata - payload includes sunrise/sunset times
+Format: [scene_id] [02] [sunrise bytes] [02] [sunset bytes]
+Example: 0B 02 B6 9C 9C 02 B6 9C 9C"""
 
 # =============================================================================
 # Power States
