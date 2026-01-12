@@ -260,22 +260,15 @@ class ProtocolProbe:
     
     async def run_all(self):
         """Run all probe tests."""
-        if not await self.connect():
-            return
+        await self.probe_gatt_info()
+        await self.probe_modes()
+        await self.probe_scene_names()
+        await self.probe_device_id()
+        await self.probe_unknown_commands()
         
-        try:
-            await self.probe_gatt_info()
-            await self.probe_modes()
-            await self.probe_scene_names()
-            await self.probe_device_id()
-            await self.probe_unknown_commands()
-            
-            print("=" * 60)
-            print("PROBING COMPLETE")
-            print("=" * 60)
-            
-        finally:
-            await self.disconnect()
+        print("=" * 60)
+        print("PROBING COMPLETE")
+        print("=" * 60)
 
 
 async def main():
