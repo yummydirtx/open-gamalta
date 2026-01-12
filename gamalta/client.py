@@ -225,6 +225,67 @@ class GamaltaClient:
         await self._send(commands.build_lightning_preview())
     
     # =========================================================================
+    # State Query
+    # =========================================================================
+    
+    async def query_state(self, timeout: float = 2.0) -> dict:
+        """
+        Query the current device state.
+        
+        Args:
+            timeout: Maximum time to wait for response
+            
+        Returns:
+            Dictionary with keys:
+            - power: bool (True = on)
+            - mode: int (mode ID)
+            - brightness: int (0-100)
+            - color: Color object (RGBWC values)
+            
+        Note:
+            Color values are LIVE INTERPOLATED for 24h scenes,
+            not the static scene definition.
+        """
+        response_data: bytes | None = None
+        response_event = asyncio.Event()
+        
+        def capture_response(data: bytes) -> None:
+            nonlocal response_data
+            # Response starts with A5, then seq, then 0x04 (state response)
+            if len(data) >= 3 and data[2] == 0x04:
+                response_data = data
+                response_event.set()
+        
+        # Temporarily capture the response
+        old_callback = self._notify_callback
+        self._notify_callback = capture_response
+        
+        try:
+            await self._send(commands.build_state_query())
+            await asyncio.wait_for(response_event.wait(), timeout=timeout)
+            
+            if response_data and len(response_data) >= 12:
+                # Parse: [A5] [seq] [04] [08] [power] [mode] [bright] [R] [G] [B] [C] [W]
+                return {
+                    "power": response_data[4] == 0x01,
+                    "mode": response_data[5],
+                    "brightness": response_data[6],
+                    "color": Color(
+                        r=response_data[7],
+                        g=response_data[8],
+                        b=response_data[9],
+                        warm_white=response_data[11],  # W comes after C
+                        cool_white=response_data[10],
+                    ),
+                }
+            else:
+                return {"power": False, "mode": 0, "brightness": 0, "color": Color.off()}
+        except asyncio.TimeoutError:
+            return {"power": False, "mode": 0, "brightness": 0, "color": Color.off()}
+        finally:
+            self._notify_callback = old_callback
+    
+    # =========================================================================
     # Context Manager Support
     # =========================================================================
     
@@ -236,3 +297,4 @@ class GamaltaClient:
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Context manager exit - disconnects from device."""
         await self.disconnect()
+

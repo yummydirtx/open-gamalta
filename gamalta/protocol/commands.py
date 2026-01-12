@@ -9,6 +9,7 @@ from ..types import Color, LightningConfig
 from .constants import (
     CMD_LOGIN, CMD_TIME_SYNC, CMD_POWER, CMD_COLOR,
     CMD_BRIGHTNESS, CMD_MODE, CMD_LIGHTNING,
+    CMD_STATE_QUERY, CMD_SCENE_ACTIVATE,
     POWER_ON, POWER_OFF, LIGHTNING_MASK, DEFAULT_PASSWORD
 )
 
@@ -162,3 +163,27 @@ def build_lightning_preview() -> bytes:
         Command payload bytes
     """
     return build_lightning(LightningConfig.preview())
+
+
+def build_state_query() -> bytes:
+    """
+    Build the state query command payload.
+    
+    Response format: [04] [08] [power] [mode] [brightness] [R] [G] [B] [C] [W]
+    
+    Returns:
+        Command payload bytes
+    """
+    return bytes([CMD_STATE_QUERY, 0x00])
+
+
+def build_scene_activate() -> bytes:
+    """
+    Build the scene activation command payload.
+    
+    Called after mode selection to activate the scene.
+    
+    Returns:
+        Command payload bytes
+    """
+    return bytes([CMD_SCENE_ACTIVATE, 0x01, 0x00])

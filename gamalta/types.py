@@ -11,10 +11,11 @@ from enum import IntEnum
 
 class Mode(IntEnum):
     """Operating modes for the light."""
-    MANUAL = 0x01
-    CORAL_REEF = 0x02
-    FISH_BLUE = 0x03
-    WATERWEED = 0x04
+    MANUAL = 0x00      # Static color mode
+    SUNSYNC = 0x01     # Intelligent SunSync - 24h cycle
+    CORAL_REEF = 0x02  # 24h cycle - coral reef colors
+    FISH_BLUE = 0x03   # 24h cycle - deep blue
+    WATERWEED = 0x04   # 24h cycle - plant growth
 
 
 class Day(IntEnum):
