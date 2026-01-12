@@ -1,89 +1,97 @@
 import asyncio
+import random
+import datetime
 from bleak import BleakScanner, BleakClient
 
-# The handle you identified in the logs (0x000E = 14)
-# The script will look for the UUID associated with this handle.
-TARGET_HANDLE = 14
+# --- CONFIGURATION ---
+DEVICE_NAME = "Gamalta"
+WRITE_UUID = "0000fff3-0000-1000-8000-00805f9b34fb"
+NOTIFY_UUID = "0000fff4-0000-1000-8000-00805f9b34fb"
+# ---------------------
 
-async def set_color(client, uuid, r, g, b, w, c):
-    """
-    Sets the color of the light.
-    R, G, B, W, C should be integers between 0 and 255.
-    """
-    # Structure: A5 [Seq] 76 [Mask] [R] [G] [B] [W] [C] [Pad] [Pad]
-    # We use a static sequence (0x11) and Mask (0x07) for now.
-    # Note: If W/C don't work, we might need to change the Mask to 0x0F or similar.
+def get_time_packet(seq):
+    """Generates the time sync packet (Command 0x16) based on current system time."""
+    now = datetime.datetime.now()
+    # Year is just the last two digits (e.g. 2026 -> 26)
+    year = now.year - 2000
     
-    command = bytearray([
-        0xA5,       # Header
-        0x12,       # Sequence (arbitrary)
-        0x76,       # Command: Set Color
-        0x07,       # Mode/Mask (Likely RGB active)
-        r, g, b,    # RGB Channels
-        w, c,       # White/Cool Channels
-        0x00, 0x00  # Padding
+    packet = bytearray([
+        0xA5,           # Header
+        seq,            # Sequence
+        0x16,           # Command: Set Time
+        0x07,           # Length/Sub-cmd
+        year,           # YY
+        now.month,      # MM
+        now.day,        # DD
+        now.hour,       # HH
+        now.minute,     # MM
+        now.second      # SS
     ])
-    
-    print(f"Sending Color Command: {command.hex().upper()}")
-    await client.write_gatt_char(uuid, command, response=True)
+    return packet
 
 async def run():
-    print("Scanning for Gamalta/Generic light...")
-    devices = await BleakScanner.discover()
-    
-    target_device = None
-    
-    # 1. FIND THE DEVICE
-    for d in devices:
-        # If your device shows up as something else, change this string!
-        # Common names: "Gamalta", "QHM", "SLED", "LED", "IS-RGB"
-        if d.name and ("Gamalta" in d.name or "LED" in d.name):
-            print(f"Found match: {d.name} - {d.address}")
-            target_device = d
-            break
+    print(f"Scanning for '{DEVICE_NAME}'...")
+    device = await BleakScanner.find_device_by_filter(
+        lambda d, ad: d.name and DEVICE_NAME in d.name
+    )
 
-    if not target_device:
-        print("Light not found in scan. List of devices found:")
-        for d in devices:
-            print(f" - {d.name or 'Unknown'} ({d.address})")
+    if not device:
+        print(f"❌ '{DEVICE_NAME}' not found.")
         return
 
-    # 2. CONNECT AND MAP HANDLE TO UUID
-    print(f"Connecting to {target_device.name}...")
-    async with BleakClient(target_device.address) as client:
+    print(f"✅ Found {device.name}. Connecting...")
+    
+    async with BleakClient(device.address) as client:
         print("Connected!")
         
-        target_uuid = None
-        
-        # Iterate through services to find the UUID for handle 14
-        for service in client.services:
-            for char in service.characteristics:
-                if char.handle == TARGET_HANDLE:
-                    target_uuid = char.uuid
-                    break
-        
-        if not target_uuid:
-            print(f"Could not find a characteristic at handle {TARGET_HANDLE} (0x0E).")
-            # Fallback: Sometimes the handle shifts. We can try to guess a common UUID here
-            # or you can list all characteristics to debug.
-            return
-        
-        print(f"Mapped Handle {TARGET_HANDLE} to UUID: {target_uuid}")
+        # 1. SUBSCRIBE (Crucial)
+        await client.start_notify(NOTIFY_UUID, lambda s, d: print(f" < RCV: {d.hex().upper()}"))
+        print("Subscribed to notifications.")
+        await asyncio.sleep(0.5)
 
-        # 3. SEND COMMANDS
-        
-        # Example 1: Set to Full RGB White (Your Request)
-        # R=255, G=255, B=255, W=0, C=0
-        await set_color(client, target_uuid, 255, 255, 255, 0, 0)
-        
-        # Wait 2 seconds so you can see the change
-        await asyncio.sleep(2)
+        # 2. HANDSHAKE / LOGIN (Command 0x10)
+        # Value: 02 followed by ASCII "123456"
+        print("Sending HANDSHAKE (123456)...")
+        seq = random.randint(10, 50)
+        handshake = bytearray([0xA5, seq, 0x10, 0x07, 0x02, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36])
+        await client.write_gatt_char(WRITE_UUID, handshake, response=False)
+        await asyncio.sleep(0.5)
 
-        # Example 2: Turn Off (Using the command we found earlier)
-        # A5 13 01 03 02 00 00
-        print("Turning OFF...")
-        off_cmd = bytearray([0xA5, 0x13, 0x01, 0x03, 0x02, 0x00, 0x00])
-        await client.write_gatt_char(target_uuid, off_cmd, response=True)
+        # 3. TIME SYNC (Command 0x16)
+        print("Sending TIME SYNC...")
+        seq += 1
+        time_packet = get_time_packet(seq)
+        print(f" > Time Packet: {time_packet.hex().upper()}")
+        await client.write_gatt_char(WRITE_UUID, time_packet, response=False)
+        await asyncio.sleep(0.5)
 
-loop = asyncio.new_event_loop()
-loop.run_until_complete(run())
+        # 4. COLOR TEST (Command 0x50)
+        print("\n--- ATTEMPTING CONTROL ---")
+        
+        # Turn ON first (just in case)
+        seq += 1
+        power_on = bytearray([0xA5, seq, 0x01, 0x03, 0x01, 0x00, 0x00])
+        await client.write_gatt_char(WRITE_UUID, power_on, response=False)
+        await asyncio.sleep(1)
+
+        # Cycle Colors
+        colors = [
+            (255, 0, 0, "RED"),
+            (0, 255, 0, "GREEN"),
+            (0, 0, 255, "BLUE"),
+            (0, 0, 0, "OFF")
+        ]
+        
+        for r, g, b, name in colors:
+            seq += 1
+            # Command 0x50 (Direct Color), Mask 0x06 (RGB)
+            cmd = bytearray([0xA5, seq, 0x50, 0x06, r, g, b, 0x00, 0x00, 0x00])
+            print(f"Sending {name}: {cmd.hex().upper()}")
+            await client.write_gatt_char(WRITE_UUID, cmd, response=False)
+            await asyncio.sleep(2)
+
+        print("Done.")
+
+if __name__ == "__main__":
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(run())
