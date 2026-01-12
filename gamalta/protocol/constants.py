@@ -41,7 +41,9 @@ CMD_TIME_SYNC = 0x16
 """Time synchronization command"""
 
 CMD_COLOR = 0x50
-"""Direct RGBWC color control"""
+"""Direct RGBWC color control - order is R G B C W (Cool before Warm)
+Payload: [mask=06] [R] [G] [B] [C] [W] [flag]
+Flag is usually 01 (apply immediately) or 00"""
 
 CMD_BRIGHTNESS = 0x52
 """Master brightness control (0-100%)"""
@@ -153,8 +155,8 @@ POWER_OFF = 0x02
 MODE_MANUAL = 0x00
 """Static color mode - exits scene, stays on last set color"""
 
-MODE_MANUAL_ALT = 0x01
-"""Alternative manual mode (may be equivalent to 0x00 in some contexts)"""
+MODE_SUNSYNC = 0x01
+"""Intelligent SunSync - 24h cycle that tracks sunrise/sunset"""
 
 MODE_CORAL_REEF = 0x02
 """24h cycle - High blue, high cool white, 50% brightness"""
