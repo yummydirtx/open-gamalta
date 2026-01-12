@@ -75,9 +75,32 @@ Example: 40 10 636C617564652074657374 = set name to "claude test" """
 CMD_QUERY_NAME = 0x42
 """Query device name - response contains name as ASCII (e.g., "gary's domain")"""
 
-CMD_UNKNOWN_09 = 0x09
-"""Query device ID/serial - response is 2 bytes (e.g., 0x7C65)
-Not the firmware version - that may come from BLE Device Information Service"""
+CMD_DEVICE_ID = 0x09
+"""Query device ID/serial - payload [01] [00] returns 2-byte device ID (e.g., 0x7C65)
+Other payloads return 0xFE (not available)"""
+
+CMD_DEVICE_INFO = 0x0D
+"""Query device info - response format: 0E 04 06 [data...]
+Possibly contains firmware version or hardware info.
+Example response: 04 06 38 10 36"""
+
+CMD_UNKNOWN_07 = 0x07
+"""Unknown query - response 0x08 with value 01"""
+
+CMD_UNKNOWN_48 = 0x48
+"""Unknown query - response 0x49 with value 01 FE"""
+
+CMD_UNKNOWN_58 = 0x58
+"""Unknown query - response 0x59 with value 01 FF"""
+
+CMD_UNKNOWN_5A = 0x5A
+"""Unknown register read - 0x5A/5B/5C all return 0x5D with value 10"""
+
+CMD_UNKNOWN_78 = 0x78
+"""Unknown query - response 0x79 with value 06 FE"""
+
+CMD_UNKNOWN_7E = 0x7E
+"""Unknown query - response 0x7F with value 01"""
 
 CMD_SCENE_ACTIVATE = 0x72
 """Activates the current scene/mode (seen after mode command)
