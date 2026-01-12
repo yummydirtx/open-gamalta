@@ -62,8 +62,12 @@ Example response for Fish Blue at 93%:
   = Power ON, Mode 3 (Fish Blue), 93% brightness, RGB(197,197,197), Cool=255, Warm=0
 """
 
-CMD_DEVICE_INFO = 0x42
-"""Query device info - response contains device name/identifier as ASCII"""
+CMD_SET_NAME = 0x40
+"""Set device name - payload [length] [name as ASCII], max ~16 chars
+Example: 40 10 636C617564652074657374 = set name to "claude test" """
+
+CMD_QUERY_NAME = 0x42
+"""Query device name - response contains name as ASCII (e.g., "gary's domain")"""
 
 CMD_UNKNOWN_09 = 0x09
 """Unknown query command - seen during app init"""
