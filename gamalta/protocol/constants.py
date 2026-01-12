@@ -52,6 +52,16 @@ CMD_MODE = 0x6A
 CMD_LIGHTNING = 0x76
 """Configure lightning effect schedule"""
 
+# Discovered commands (needs more research)
+CMD_STATE_QUERY = 0x03
+"""Query device state - response contains current mode, brightness, color"""
+
+CMD_SCENE_ACTIVATE = 0x72
+"""Possibly activates the current scene/mode (seen after mode command)"""
+
+CMD_UNKNOWN_56 = 0x56
+"""Unknown - seen with values 01 and 02, possibly pump/accessory control"""
+
 # =============================================================================
 # Power States
 # =============================================================================

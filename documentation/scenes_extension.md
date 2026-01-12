@@ -100,11 +100,24 @@ Activates a specific behavior.
 | **`0x03`** | **Fish Blue** | 24h Cycle. Deep Blue focus, Low brightness (26%). |
 | **`0x04`+** | *Unknown* | Likely other presets (Sunrise, Daylight, etc.). |
 
-**Implementation Note:** When activating a scene, the official app typically sends:
+**Implementation Note:** When activating a scene from the OFF state, the official app sends:
 
 1. **Color Command (`0x50`):** Sets the LEDs to what the scene *should* look like right now (preventing visual lag).
 2. **Brightness Command (`0x52`):** Sets the scene's default brightness.
 3. **Mode Command (`0x6A`):** Engages the firmware logic to take over from there.
+4. **Scene Activate (`0x72`):** Payload `01 00` - possibly confirms scene activation.
+5. **State Query (`0x03`):** Payload `00` - queries current device state.
+
+> **Note:** There is NO explicit power-on command (`0x01`) in this sequence! Setting the mode appears to implicitly turn the light on.
+
+### Additional Commands Observed
+
+| Cmd | Payload | Notes |
+|-----|---------|-------|
+| `0x72` | `01 00` | Seen after mode command, possibly "activate scene" |
+| `0x03` | `00` | State query - response contains mode, brightness, color |
+| `0x76` | `07 FF 00...` | Lightning with intensity 0xFF (disabled?) |
+| `0x56` | `01 01`, `01 02` | Unknown - possibly pump/accessory control |
 
 ---
 
