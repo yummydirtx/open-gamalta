@@ -101,11 +101,17 @@ Must be called before writing schedule points"""
 
 CMD_WRITE_SCHEDULE_POINT = 0x60
 """Write schedule point data - payload format (12 bytes total):
-  [scene_id] [point_idx] [start_h] [start_m] [end_h] [end_m] [R] [G] [B] [W] [C] [brightness]
+  [scene_id] [point_idx] [start_h] [start_m] [end_h] [end_m] [R] [G] [B] [C] [W] [brightness]
   
-Example for 5AM node (red color):
-  0B 01 14 00 05 00 FF 00 00 00 00 64
-  = Scene 0x0B, Point 1, 20:00-05:00, RGB(255,0,0), W=0, C=0, 100% brightness
+  NOTE: Order is R G B C W (Cool White before Warm White) - differs from 0x50 color command!
+  
+Example for Pro scene 5AM node (red + cool white):
+  0C 01 14 00 05 00 FF 00 00 9E 00 64
+  = Scene 0x0C, Point 1, 20:00-05:00, RGB(255,0,0), Cool=158, Warm=0, 100%
+  
+Example for Pro scene 8PM node (warm white only):
+  0C 05 19 00 14 00 00 00 00 00 1E 64  
+  = Scene 0x0C, Point 5, 19:00-20:00, RGB(0,0,0), Cool=0, Warm=30, 100%
   
 Point 0xFF is used as end marker to finalize the scene."""
 
