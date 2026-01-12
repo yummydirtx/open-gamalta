@@ -56,10 +56,14 @@ CMD_LIGHTNING = 0x76
 CMD_STATE_QUERY = 0x03
 """
 Query device state - response format:
-  [04] [08] [power] [mode] [brightness] [R] [G] [B] [cool_w] [warm_w]
-Example response for Fish Blue at 93%:
-  04 08 01 03 5D C5 C5 C5 FF 00
-  = Power ON, Mode 3 (Fish Blue), 93% brightness, RGB(197,197,197), Cool=255, Warm=0
+  [04] [08] [power] [mode] [brightness] [R] [G] [B] [C] [W]
+  
+NOTE: Colors are LIVE INTERPOLATED values based on current time of day,
+not the static scene definition! For a 24h scene, these will change throughout the day.
+
+Example response for Pro scene at ~12:16pm:
+  04 08 01 0C 64 FF EE 11 6E 6E
+  = Power ON, Mode 0x0C (Pro), 100%, RGB(255,238,17), Cool=110, Warm=110
 """
 
 CMD_SET_NAME = 0x40
@@ -70,13 +74,17 @@ CMD_QUERY_NAME = 0x42
 """Query device name - response contains name as ASCII (e.g., "gary's domain")"""
 
 CMD_UNKNOWN_09 = 0x09
-"""Unknown query command - seen during app init"""
+"""Query device ID/serial - response is 2 bytes (e.g., 0x7C65)
+Not the firmware version - that may come from BLE Device Information Service"""
 
 CMD_SCENE_ACTIVATE = 0x72
-"""Activates the current scene/mode (seen after mode command)"""
+"""Activates the current scene/mode (seen after mode command)
+Response includes the active scene ID"""
 
-CMD_UNKNOWN_56 = 0x56
-"""Unknown - seen with values 01 and 02, possibly pump/accessory control"""
+CMD_CHANNEL_QUERY = 0x56
+"""Query accessory/output channel status - payload [01] [channel 1 or 2]
+Response format: 57 08 [channel] 00...
+Possibly pump or secondary output control"""
 
 # Scene/Schedule Commands
 CMD_SCENE_LIST = 0x64
