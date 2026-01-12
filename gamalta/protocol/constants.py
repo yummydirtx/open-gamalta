@@ -81,10 +81,21 @@ CMD_SCENE_ACTIVATE = 0x72
 """Activates the current scene/mode (seen after mode command)
 Response includes the active scene ID"""
 
-CMD_CHANNEL_QUERY = 0x56
-"""Query accessory/output channel status - payload [01] [channel 1 or 2]
-Response format: 57 08 [channel] 00...
-Possibly pump or secondary output control"""
+CMD_TIMER_QUERY = 0x56
+"""Query timer status - payload [01] [slot 1 or 2]
+Response format: 57 08 [slot] 00...
+There are 2 timer slots that work together (on timer + off timer)"""
+
+CMD_TIMER_SET = 0x54
+"""Set timer - payload format (7 bytes):
+  [slot] [enabled] [FF] [hour] [??] [??] [action]
+  
+Slots: 01 = timer 1, 02 = timer 2
+Action: 01 = turn ON, 00 = turn OFF
+
+Example for 6h off-timer at 12:24 (off at 18:24):
+  Slot 1: 01 01 FF 0C 18 0C 01
+  Slot 2: 02 01 FF 12 18 0C 00"""
 
 # Scene/Schedule Commands
 CMD_SCENE_LIST = 0x64
@@ -139,8 +150,11 @@ POWER_OFF = 0x02
 # Operating Modes
 # =============================================================================
 
-MODE_MANUAL = 0x01
-"""Static color mode - stays on last set color"""
+MODE_MANUAL = 0x00
+"""Static color mode - exits scene, stays on last set color"""
+
+MODE_MANUAL_ALT = 0x01
+"""Alternative manual mode (may be equivalent to 0x00 in some contexts)"""
 
 MODE_CORAL_REEF = 0x02
 """24h cycle - High blue, high cool white, 50% brightness"""
@@ -150,6 +164,13 @@ MODE_FISH_BLUE = 0x03
 
 MODE_WATERWEED = 0x04
 """24h cycle - Plant growth mode"""
+
+# Custom scenes start at 0x0B
+MODE_CUSTOM_BASIC = 0x0B
+"""Custom scene slot 1 (default name: 'Basic')"""
+
+MODE_CUSTOM_PRO = 0x0C
+"""Custom scene slot 2 (default name: 'Pro')"""
 
 # =============================================================================
 # Lightning Effect Constants
