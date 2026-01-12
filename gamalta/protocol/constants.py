@@ -54,13 +54,42 @@ CMD_LIGHTNING = 0x76
 
 # Discovered commands (needs more research)
 CMD_STATE_QUERY = 0x03
-"""Query device state - response contains current mode, brightness, color"""
+"""
+Query device state - response format:
+  [04] [08] [power] [mode] [brightness] [R] [G] [B] [cool_w] [warm_w]
+Example response for Fish Blue at 93%:
+  04 08 01 03 5D C5 C5 C5 FF 00
+  = Power ON, Mode 3 (Fish Blue), 93% brightness, RGB(197,197,197), Cool=255, Warm=0
+"""
+
+CMD_DEVICE_INFO = 0x42
+"""Query device info - response contains device name/identifier as ASCII"""
+
+CMD_UNKNOWN_09 = 0x09
+"""Unknown query command - seen during app init"""
 
 CMD_SCENE_ACTIVATE = 0x72
-"""Possibly activates the current scene/mode (seen after mode command)"""
+"""Activates the current scene/mode (seen after mode command)"""
 
 CMD_UNKNOWN_56 = 0x56
 """Unknown - seen with values 01 and 02, possibly pump/accessory control"""
+
+# Scene/Schedule Query Commands
+CMD_SCENE_LIST = 0x64
+"""Query scene list - payload [01] [slot], returns scene info"""
+
+CMD_SCENE_META = 0x6E
+"""Query scene metadata - payload [01] [scene_id]"""
+
+CMD_SCENE_NAME = 0x68
+"""Query scene name - payload [01] [scene_id], response is ASCII name (e.g., "Basic", "Pro")"""
+
+CMD_SCENE_POINTS = 0x70
+"""Query number of points in a scene's 24h schedule - payload [01] [scene_id]"""
+
+CMD_SCHEDULE_POINT = 0x62
+"""Query schedule point data - payload [02] [scene_id] [point_index 1-5]
+Response contains time ranges and RGBWC values for each segment of the 24h cycle"""
 
 # =============================================================================
 # Power States
