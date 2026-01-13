@@ -111,8 +111,15 @@ class GamaltaClient:
         await self._send(commands.build_time_sync())
         
         # Scene activate - required to keep current scene state intact
-        # Without this, the device may reset to a default state
         await self._send(commands.build_scene_activate())
+        
+        # Connection stability sequence (matches official app)
+        # Query state, lightning, and timers to "lock in" the connection
+        # and prevent the device from resetting/turning off
+        await self._send(commands.build_state_query())
+        await self._send(commands.build_lightning_query())
+        await self._send(commands.build_timer_query(1))
+        await self._send(commands.build_timer_query(2))
     
     def _on_notify(self, data: bytes) -> None:
         """Handle notification data from device."""
@@ -340,10 +347,14 @@ class GamaltaClient:
         await self._send(commands.build_mode(mode_int))
         
         # For 24h cycle modes (not MANUAL), also send scene activate
-        # followed by state query to lock in values (matches app behavior)
+        # followed by state, lightning, and timer queries to match app behavior
         if mode_int != 0x00:
             await self._send(commands.build_scene_activate())
             await self._send(commands.build_state_query())
+            # Mimic app: Query lightning and timers after activation
+            await self._send(commands.build_lightning_query())
+            await self._send(commands.build_timer_query(1))
+            await self._send(commands.build_timer_query(2))
     
     # =========================================================================
     # Lightning Effects

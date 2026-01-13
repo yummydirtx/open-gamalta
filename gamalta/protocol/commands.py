@@ -9,7 +9,7 @@ from ..types import Color, LightningConfig
 from .constants import (
     CMD_LOGIN, CMD_TIME_SYNC, CMD_POWER, CMD_COLOR,
     CMD_BRIGHTNESS, CMD_MODE, CMD_LIGHTNING,
-    CMD_STATE_QUERY, CMD_SCENE_ACTIVATE,
+    CMD_STATE_QUERY, CMD_SCENE_ACTIVATE, CMD_TIMER_QUERY,
     POWER_ON, POWER_OFF, LIGHTNING_MASK, DEFAULT_PASSWORD
 )
 
@@ -45,9 +45,11 @@ def build_time_sync(dt: datetime | None = None) -> bytes:
     # Year is offset from 2000
     year = dt.year - 2000
     
+    # Protocol: Year, Month, Day, Weekday(1=Mon), Hour, Minute, Second
     return bytes([
         CMD_TIME_SYNC, 0x07,
         year, dt.month, dt.day,
+        dt.isoweekday(),  # 1=Monday, 7=Sunday
         dt.hour, dt.minute, dt.second
     ])
 
@@ -188,3 +190,30 @@ def build_scene_activate() -> bytes:
         Command payload bytes
     """
     return bytes([CMD_SCENE_ACTIVATE, 0x01, 0x00])
+
+
+def build_lightning_query() -> bytes:
+    """
+    Build the lightning schedule query command payload.
+    
+    Returns:
+        Command payload bytes
+    """
+    # 76 07 FF 00 00 00 00 00 00
+    return bytes([
+        CMD_LIGHTNING, LIGHTNING_MASK,
+        0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    ])
+
+
+def build_timer_query(slot: int) -> bytes:
+    """
+    Build the timer query command payload.
+    
+    Args:
+        slot: Timer slot (1 or 2)
+        
+    Returns:
+        Command payload bytes
+    """
+    return bytes([CMD_TIMER_QUERY, 0x01, slot])
