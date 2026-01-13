@@ -68,9 +68,27 @@ A5 [Seq] 10 07 02 31 32 33 34 35 36
 Set the device's internal clock.
 
 ```
-A5 [Seq] 16 07 [YY] [MM] [DD] [HH] [mm] [ss]
+A5 [Seq] 16 07 [YY] [MM] [DD] [WD] [HH] [mm] [ss]
+              │    │    │    │    │    │    └─ Second
+              │    │    │    │    │    └─ Minute
+              │    │    │    │    └─ Hour
+              │    │    │    └─ Weekday (1=Mon ... 7=Sun)
+              │    │    └─ Day
+              │    └─ Month
               └─ Year = actual year - 2000
 ```
+
+### Step 4: Stabilization (Critical)
+After Time Sync and/or Scene Activation, the official app sends a specific sequence of queries. Omitting these may cause the device to reset its state (0 brightness/color) or disconnect.
+
+Recommended sequence:
+1. `CMD_STATE_QUERY` (0x03)
+2. `CMD_LIGHTNING_QUERY` (0x77 slot 1? actually just command 0x76 read?) -> Actually command `0x76` is set. Query is likely `0x77`? No, app sends 0x76 07 ... as query? Need to check.
+   - *Correction*: Official app just sends state query, lightning query (likely `77 01 00`?), and timer queries (`56 01 01`, `56 01 02`).
+
+Minimal proven sequence:
+- `CMD_STATE_QUERY` (0x03 00)
+- `CMD_TIMER_QUERY` x2 (0x56 01 01, 0x56 01 02)
 
 ---
 
@@ -308,7 +326,7 @@ Success is indicated by the response arriving; no explicit error codes observed.
 ### Handshake
 ```python
 login = [0xA5, seq, 0x10, 0x07, 0x02, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36]
-time_sync = [0xA5, seq, 0x16, 0x07, year-2000, month, day, hour, min, sec]
+time_sync = [0xA5, seq, 0x16, 0x07, year-2000, month, day, weekday, hour, min, sec]
 ```
 
 ### Common Commands
