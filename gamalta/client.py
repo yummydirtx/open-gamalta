@@ -181,6 +181,111 @@ class GamaltaClient:
         if set_manual_mode:
             await self.set_mode(Mode.MANUAL)
     
+    async def set_rgb(self, r: int, g: int, b: int) -> None:
+        """
+        Set only the RGB channels, preserving warm/cool white values.
+        
+        Args:
+            r: Red (0-255)
+            g: Green (0-255)
+            b: Blue (0-255)
+        """
+        state = await self.query_state()
+        color = state["color"]
+        await self._send(commands.build_color(Color(
+            r, g, b, color.warm_white, color.cool_white
+        )))
+    
+    async def set_warm_white(self, level: int) -> None:
+        """
+        Set only the warm white channel, preserving all other values.
+        
+        Args:
+            level: Warm white brightness (0-255)
+        """
+        state = await self.query_state()
+        color = state["color"]
+        await self._send(commands.build_color(Color(
+            color.r, color.g, color.b, level, color.cool_white
+        )))
+    
+    async def set_cool_white(self, level: int) -> None:
+        """
+        Set only the cool white channel, preserving all other values.
+        
+        Args:
+            level: Cool white brightness (0-255)
+        """
+        state = await self.query_state()
+        color = state["color"]
+        await self._send(commands.build_color(Color(
+            color.r, color.g, color.b, color.warm_white, level
+        )))
+    
+    async def set_red(self, level: int) -> None:
+        """
+        Set only the red channel, preserving all other values.
+        
+        Args:
+            level: Red brightness (0-255)
+        """
+        state = await self.query_state()
+        color = state["color"]
+        await self._send(commands.build_color(Color(
+            level, color.g, color.b, color.warm_white, color.cool_white
+        )))
+    
+    async def set_green(self, level: int) -> None:
+        """
+        Set only the green channel, preserving all other values.
+        
+        Args:
+            level: Green brightness (0-255)
+        """
+        state = await self.query_state()
+        color = state["color"]
+        await self._send(commands.build_color(Color(
+            color.r, level, color.b, color.warm_white, color.cool_white
+        )))
+    
+    async def set_blue(self, level: int) -> None:
+        """
+        Set only the blue channel, preserving all other values.
+        
+        Args:
+            level: Blue brightness (0-255)
+        """
+        state = await self.query_state()
+        color = state["color"]
+        await self._send(commands.build_color(Color(
+            color.r, color.g, level, color.warm_white, color.cool_white
+        )))
+    
+    async def set_rgbwc(
+        self, 
+        r: int, 
+        g: int, 
+        b: int, 
+        warm_white: int, 
+        cool_white: int
+    ) -> None:
+        """
+        Set all color channels at once (RGB + warm/cool white).
+        
+        This is the low-level method that sets all channels without
+        querying state or sending mode commands.
+        
+        Args:
+            r: Red (0-255)
+            g: Green (0-255)
+            b: Blue (0-255)
+            warm_white: Warm white LED (0-255)
+            cool_white: Cool white LED (0-255)
+        """
+        await self._send(commands.build_color(Color(
+            r, g, b, warm_white, cool_white
+        )))
+    
     # =========================================================================
     # Brightness Control
     # =========================================================================
@@ -205,7 +310,13 @@ class GamaltaClient:
         Args:
             mode: Mode to activate (use Mode enum)
         """
-        await self._send(commands.build_mode(int(mode)))
+        mode_int = int(mode)
+        await self._send(commands.build_mode(mode_int))
+        
+        # For 24h cycle modes (not MANUAL), also send scene activate
+        # to trigger immediate color update like the official app does
+        if mode_int != 0x00:  # Not MANUAL mode
+            await self._send(commands.build_scene_activate())
     
     # =========================================================================
     # Lightning Effects

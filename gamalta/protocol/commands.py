@@ -79,8 +79,8 @@ def build_color(color: Color) -> bytes:
     return bytes([
         CMD_COLOR, 0x06,
         color.r, color.g, color.b,
-        color.warm_white, color.cool_white,
-        0x01  # Apply immediately flag
+        color.cool_white, color.warm_white,  # Protocol order: R G B C W
+        0x00  # Flag (matches official app)
     ])
 
 
