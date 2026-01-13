@@ -21,6 +21,14 @@ from .exceptions import (
     NotConnectedError,
 )
 from .transport.ble import scan_for_devices, find_device
+from .scenes import (
+    Scene,
+    SceneKeyframe,
+    SceneRegistry,
+    get_scene,
+    get_scene_registry,
+    register_custom_scene,
+)
 
 __version__ = "0.1.0"
 
@@ -32,6 +40,13 @@ __all__ = [
     "LightningConfig", 
     "Mode",
     "Day",
+    # Scenes
+    "Scene",
+    "SceneKeyframe",
+    "SceneRegistry",
+    "get_scene",
+    "get_scene_registry",
+    "register_custom_scene",
     # Exceptions
     "GamaltaError",
     "ConnectionError",

@@ -14,6 +14,7 @@ from .protocol.packet import PacketBuilder
 from .protocol import commands
 from .transport.base import Transport
 from .transport.ble import BleTransport, find_device
+from .scenes import get_scene
 
 
 class GamaltaClient:
@@ -102,12 +103,16 @@ class GamaltaClient:
         await asyncio.sleep(self.COMMAND_DELAY)
     
     async def _handshake(self) -> None:
-        """Perform the login and time sync handshake."""
+        """Perform the login, time sync, and scene activation handshake."""
         # Login with default password
         await self._send(commands.build_login())
         
         # Sync time
         await self._send(commands.build_time_sync())
+        
+        # Scene activate - required to keep current scene state intact
+        # Without this, the device may reset to a default state
+        await self._send(commands.build_scene_activate())
     
     def _on_notify(self, data: bytes) -> None:
         """Handle notification data from device."""
@@ -303,20 +308,42 @@ class GamaltaClient:
     # Mode Control
     # =========================================================================
     
-    async def set_mode(self, mode: Mode | int) -> None:
+    async def set_mode(self, mode: Mode | int, apply_scene_color: bool = True) -> None:
         """
         Set the operating mode/scene.
         
+        For 24h cycle modes (Fish Blue, Coral Reef, etc.), this will:
+        1. Look up the scene's keyframe schedule
+        2. Calculate the current interpolated color/brightness
+        3. Apply the color and brightness before switching mode
+        4. Send the mode command and scene activate
+        
+        This matches the official app's behavior for immediate visual updates.
+        
         Args:
             mode: Mode to activate (use Mode enum)
+            apply_scene_color: If True, apply interpolated color for known scenes
         """
         mode_int = int(mode)
+        
+        # For 24h cycle modes, apply interpolated color first
+        if mode_int != 0x00 and apply_scene_color:
+            scene = get_scene(mode_int)
+            if scene:
+                color, brightness = scene.get_interpolated_state()
+                # Apply color and brightness like the official app
+                # Use apply_flag=0x01 for scene activation (vs 0x00 for manual)
+                await self._send(commands.build_color(color, apply_flag=0x01))
+                await self._send(commands.build_brightness(brightness))
+        
+        # Send mode command
         await self._send(commands.build_mode(mode_int))
         
         # For 24h cycle modes (not MANUAL), also send scene activate
-        # to trigger immediate color update like the official app does
-        if mode_int != 0x00:  # Not MANUAL mode
+        # followed by state query to lock in values (matches app behavior)
+        if mode_int != 0x00:
             await self._send(commands.build_scene_activate())
+            await self._send(commands.build_state_query())
     
     # =========================================================================
     # Lightning Effects

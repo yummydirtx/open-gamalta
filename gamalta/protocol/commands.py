@@ -66,12 +66,13 @@ def build_power(on: bool) -> bytes:
     return bytes([CMD_POWER, 0x03, state, 0x00, 0x00])
 
 
-def build_color(color: Color) -> bytes:
+def build_color(color: Color, apply_flag: int = 0x00) -> bytes:
     """
     Build the direct color control command payload.
     
     Args:
         color: Color to set (RGBWC)
+        apply_flag: 0x00 for manual color changes, 0x01 for scene activation
         
     Returns:
         Command payload bytes
@@ -80,7 +81,7 @@ def build_color(color: Color) -> bytes:
         CMD_COLOR, 0x06,
         color.r, color.g, color.b,
         color.cool_white, color.warm_white,  # Protocol order: R G B C W
-        0x00  # Flag (matches official app)
+        apply_flag
     ])
 
 
