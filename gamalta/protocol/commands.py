@@ -10,6 +10,7 @@ from .constants import (
     CMD_LOGIN, CMD_TIME_SYNC, CMD_POWER, CMD_COLOR,
     CMD_BRIGHTNESS, CMD_MODE, CMD_LIGHTNING,
     CMD_STATE_QUERY, CMD_SCENE_ACTIVATE, CMD_TIMER_QUERY,
+    CMD_QUERY_NAME, CMD_SET_NAME,
     POWER_ON, POWER_OFF, LIGHTNING_MASK, DEFAULT_PASSWORD
 )
 
@@ -217,3 +218,36 @@ def build_timer_query(slot: int) -> bytes:
         Command payload bytes
     """
     return bytes([CMD_TIMER_QUERY, 0x01, slot])
+
+
+def build_name_query() -> bytes:
+    """
+    Build the device name query command payload.
+    
+    Response format: [43] [10] [name as ASCII, null-padded to 16 chars]
+    
+    Returns:
+        Command payload bytes
+    """
+    return bytes([CMD_QUERY_NAME, 0x01, 0x00])
+
+
+def build_name_set(name: str) -> bytes:
+    """
+    Build the device name set command payload.
+    
+    Args:
+        name: New device name (max 16 characters)
+        
+    Returns:
+        Command payload bytes
+        
+    Raises:
+        ValueError: If name exceeds 16 characters
+    """
+    if len(name) > 16:
+        raise ValueError(f"Device name must be 16 characters or less, got {len(name)}")
+    
+    # Pad name to 16 bytes with null characters
+    name_bytes = name.encode('ascii')[:16].ljust(16, b'\x00')
+    return bytes([CMD_SET_NAME, 0x10]) + name_bytes

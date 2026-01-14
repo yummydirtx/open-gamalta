@@ -435,6 +435,63 @@ class GamaltaClient:
             self._notify_callback = old_callback
     
     # =========================================================================
+    # Device Name
+    # =========================================================================
+    
+    async def query_name(self, timeout: float = 2.0) -> str:
+        """
+        Query the device name.
+        
+        Args:
+            timeout: Maximum time to wait for response
+            
+        Returns:
+            Device name as a string
+        """
+        response_data: bytes | None = None
+        response_event = asyncio.Event()
+        
+        def capture_response(data: bytes) -> None:
+            nonlocal response_data
+            # Response starts with A5, then seq, then 0x43 (name response)
+            if len(data) >= 3 and data[2] == 0x43:
+                response_data = data
+                response_event.set()
+        
+        # Temporarily capture the response
+        old_callback = self._notify_callback
+        self._notify_callback = capture_response
+        
+        try:
+            await self._send(commands.build_name_query())
+            await asyncio.wait_for(response_event.wait(), timeout=timeout)
+            
+            if response_data and len(response_data) >= 4:
+                # Parse: [A5] [seq] [43] [10] [name as ASCII, null-padded]
+                name_bytes = response_data[4:]
+                # Strip null padding and decode
+                name = name_bytes.rstrip(b'\x00').decode('ascii', errors='replace')
+                return name
+            else:
+                return ""
+        except asyncio.TimeoutError:
+            return ""
+        finally:
+            self._notify_callback = old_callback
+    
+    async def set_name(self, name: str) -> None:
+        """
+        Set the device name.
+        
+        Args:
+            name: New device name (max 16 characters)
+            
+        Raises:
+            ValueError: If name exceeds 16 characters
+        """
+        await self._send(commands.build_name_set(name))
+    
+    # =========================================================================
     # Context Manager Support
     # =========================================================================
     

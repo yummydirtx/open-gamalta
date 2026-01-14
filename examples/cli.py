@@ -167,6 +167,8 @@ def print_help():
 ║                                                                    ║
 ║  OTHER                                                             ║
 ║    status                - Show current light state                ║
+║    name                  - Show device name                        ║
+║    name <new_name>       - Set device name (max 16 chars)          ║
 ║    scan                  - Scan for devices                        ║
 ║    help                  - Show this help                          ║
 ║    quit / exit           - Disconnect and exit                     ║
@@ -311,13 +313,29 @@ async def handle_command(client: GamaltaClient, cmd: str, args: list[str]) -> bo
         elif cmd == "status":
             debug_print("Querying device state...")
             state = await client.query_state()
+            name = await client.query_name()
             power_str = "ON" if state["power"] else "OFF"
             mode_name = Mode(state["mode"]).name if state["mode"] in [m.value for m in Mode] else f"Unknown({state['mode']})"
             color = state["color"]
+            debug_print(f"  Name:       {name or '(unknown)'}")
             debug_print(f"  Power:      {power_str}")
             debug_print(f"  Mode:       {mode_name}")
             debug_print(f"  Brightness: {state['brightness']}%")
             debug_print(f"  Color:      RGB({color.r}, {color.g}, {color.b}) W:{color.warm_white} C:{color.cool_white}")
+        
+        elif cmd == "name":
+            if not args:
+                # Query and display current name
+                name = await client.query_name()
+                debug_print(f"Device name: {name or '(unknown)'}")
+            else:
+                # Set new name
+                new_name = " ".join(args)
+                if len(new_name) > 16:
+                    debug_print("Error: Name must be 16 characters or less")
+                    return True
+                await client.set_name(new_name)
+                debug_print(f"✓ Device name set to: {new_name}")
         
         elif cmd == "scan":
             debug_print("Scanning for devices...")
@@ -392,7 +410,9 @@ async def main():
     debug_print("Searching for Gamalta device...")
     try:
         await client.connect()
-        debug_print("✓ Connected!")
+        # Query and display device name
+        name = await client.query_name()
+        debug_print(f"✓ Connected to: {name or 'Gamalta device'}")
         debug_print("")
         debug_print("Type 'help' for available commands, 'quit' to exit.")
         debug_print("")
