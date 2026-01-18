@@ -1,5 +1,5 @@
 /**
- * Connection status indicator and connect/disconnect controls.
+ * Premium connection status indicator and controls.
  */
 
 import { useState } from 'react';
@@ -18,16 +18,39 @@ import {
   CircularProgress,
   Typography,
   Alert,
+  keyframes,
+  alpha,
 } from '@mui/material';
 import {
   Bluetooth,
   BluetoothDisabled,
   Search,
   LinkOff,
+  BluetoothSearching,
 } from '@mui/icons-material';
 import { useDeviceStore } from '../stores/deviceStore';
 import { deviceApi } from '../api/client';
 import type { DeviceInfo } from '../types/device';
+
+const pulseGlow = keyframes`
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.7);
+  }
+`;
+
+const scanPulse = keyframes`
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+`;
 
 export function ConnectionStatus() {
   const { connected, connecting, deviceName, setConnecting, setConnection, setError } =
@@ -79,11 +102,41 @@ export function ConnectionStatus() {
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      {/* Connection status chip */}
       <Chip
-        icon={connected ? <Bluetooth /> : <BluetoothDisabled />}
+        icon={
+          connected ? (
+            <Box
+              sx={{
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                backgroundColor: 'success.main',
+                animation: `${pulseGlow} 2s ease-in-out infinite`,
+                ml: 1,
+              }}
+            />
+          ) : (
+            <BluetoothDisabled sx={{ fontSize: 18 }} />
+          )
+        }
         label={connected ? deviceName || 'Connected' : 'Disconnected'}
-        color={connected ? 'success' : 'default'}
-        variant={connected ? 'filled' : 'outlined'}
+        sx={{
+          background: connected
+            ? 'rgba(34, 197, 94, 0.15)'
+            : 'rgba(255, 255, 255, 0.05)',
+          border: '1px solid',
+          borderColor: connected
+            ? alpha('#22c55e', 0.3)
+            : 'rgba(255, 255, 255, 0.1)',
+          color: connected ? 'success.light' : 'text.secondary',
+          fontWeight: 500,
+          backdropFilter: 'blur(10px)',
+          px: 0.5,
+          '& .MuiChip-icon': {
+            color: connected ? 'success.main' : 'text.secondary',
+          },
+        }}
       />
 
       {connected ? (
@@ -93,6 +146,13 @@ export function ConnectionStatus() {
           size="small"
           startIcon={<LinkOff />}
           onClick={handleDisconnect}
+          sx={{
+            borderColor: alpha('#ef4444', 0.5),
+            '&:hover': {
+              borderColor: '#ef4444',
+              background: alpha('#ef4444', 0.1),
+            },
+          }}
         >
           Disconnect
         </Button>
@@ -100,36 +160,132 @@ export function ConnectionStatus() {
         <Button
           variant="contained"
           size="small"
-          startIcon={connecting ? <CircularProgress size={16} /> : <Search />}
+          startIcon={
+            connecting ? (
+              <CircularProgress size={16} sx={{ color: 'white' }} />
+            ) : (
+              <Bluetooth />
+            )
+          }
           onClick={handleScan}
           disabled={connecting}
+          sx={{
+            background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+            boxShadow: '0 4px 20px rgba(59, 130, 246, 0.4)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #2563eb 0%, #0891b2 100%)',
+              boxShadow: '0 6px 25px rgba(59, 130, 246, 0.5)',
+            },
+          }}
         >
           {connecting ? 'Connecting...' : 'Connect'}
         </Button>
       )}
 
-      <Dialog open={scanOpen} onClose={() => setScanOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Connect to Device</DialogTitle>
-        <DialogContent>
+      {/* Scan dialog */}
+      <Dialog
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: 'rgba(15, 31, 56, 0.95)',
+            backdropFilter: 'blur(30px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          }}
+        >
+          <BluetoothSearching sx={{ color: 'primary.main' }} />
+          Connect to Device
+        </DialogTitle>
+        <DialogContent sx={{ py: 3 }}>
           {scanning ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 4 }}>
-              <CircularProgress size={24} />
-              <Typography>Scanning for devices...</Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
+                py: 4,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 60,
+                  height: 60,
+                  borderRadius: '50%',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  animation: `${scanPulse} 1.5s ease-in-out infinite`,
+                }}
+              >
+                <BluetoothSearching sx={{ fontSize: 30, color: 'primary.main' }} />
+              </Box>
+              <Typography color="text.secondary">Scanning for devices...</Typography>
             </Box>
           ) : scanError ? (
-            <Alert severity="error">{scanError}</Alert>
+            <Alert
+              severity="error"
+              sx={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+              }}
+            >
+              {scanError}
+            </Alert>
           ) : devices.length === 0 ? (
-            <Typography color="text.secondary" sx={{ py: 2 }}>
-              No devices found. Make sure your Gamalta light is powered on.
-            </Typography>
+            <Box sx={{ textAlign: 'center', py: 3 }}>
+              <Typography color="text.secondary" gutterBottom>
+                No devices found.
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Make sure your Gamalta light is powered on and in range.
+              </Typography>
+            </Box>
           ) : (
-            <List>
+            <List sx={{ mx: -2 }}>
               {devices.map((device) => (
                 <ListItem key={device.address} disablePadding>
-                  <ListItemButton onClick={() => handleConnect(device.address)}>
+                  <ListItemButton
+                    onClick={() => handleConnect(device.address)}
+                    sx={{
+                      borderRadius: 2,
+                      mx: 1,
+                      '&:hover': {
+                        background: 'rgba(59, 130, 246, 0.1)',
+                      },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '10px',
+                        background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mr: 2,
+                      }}
+                    >
+                      <Bluetooth sx={{ color: 'white' }} />
+                    </Box>
                     <ListItemText
                       primary={device.name}
                       secondary={device.address}
+                      primaryTypographyProps={{ fontWeight: 500 }}
+                      secondaryTypographyProps={{ sx: { opacity: 0.6 } }}
                     />
                   </ListItemButton>
                 </ListItem>
@@ -137,8 +293,10 @@ export function ConnectionStatus() {
             </List>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setScanOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)', px: 3, py: 2 }}>
+          <Button onClick={() => setScanOpen(false)} sx={{ color: 'text.secondary' }}>
+            Cancel
+          </Button>
           {!scanning && devices.length === 0 && (
             <Button onClick={() => handleConnect()} variant="contained">
               Auto-discover
