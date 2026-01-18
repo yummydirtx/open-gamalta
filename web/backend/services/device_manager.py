@@ -11,7 +11,7 @@ from datetime import datetime
 from gamalta import GamaltaClient
 from gamalta.types import Mode, Color, LightningConfig
 from gamalta.exceptions import GamaltaError, NotConnectedError, DeviceNotFoundError
-from gamalta.transport.ble import BleTransport
+from gamalta.transport.ble import scan_for_devices
 
 from ..config import settings
 
@@ -70,8 +70,7 @@ class DeviceManager:
         Returns:
             List of dicts with 'address' and 'name' keys.
         """
-        transport = BleTransport()
-        devices = await transport.scan(timeout=timeout, name_filter="Gamalta")
+        devices = await scan_for_devices(name_filter="Gamalta", timeout=timeout)
         return [{"address": d.address, "name": d.name or "Unknown"} for d in devices]
 
     async def connect(self, address: str | None = None) -> str:
