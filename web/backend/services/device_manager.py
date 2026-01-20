@@ -166,7 +166,9 @@ class DeviceManager:
         self, r: int, g: int, b: int, warm_white: int = 0, cool_white: int = 0
     ) -> None:
         """Set the light color (RGBWC)."""
-        await self._execute("set_color", r, g, b, warm_white, cool_white)
+        # Pass set_manual_mode=False to avoid resetting colors when switching modes
+        # The web UI handles mode selection separately
+        await self._execute("set_color", r, g, b, warm_white, cool_white, set_manual_mode=False)
 
     async def set_brightness(self, percent: int) -> None:
         """Set brightness (0-100)."""

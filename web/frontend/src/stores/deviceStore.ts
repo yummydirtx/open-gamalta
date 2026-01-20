@@ -25,6 +25,7 @@ interface DeviceStore {
   // UI state
   pendingCommand: boolean;
   lastError: string | null;
+  isEditingColor: boolean;  // Prevents WebSocket from overwriting color while user is editing
 
   // Actions
   setConnection: (connected: boolean, name?: string | null, address?: string | null) => void;
@@ -39,6 +40,7 @@ interface DeviceStore {
   setModes: (modes: ModeInfo[]) => void;
   setError: (error: string | null) => void;
   setPending: (pending: boolean) => void;
+  setEditingColor: (editing: boolean) => void;
   reset: () => void;
 }
 
@@ -55,9 +57,10 @@ const initialState = {
   modes: [],
   pendingCommand: false,
   lastError: null,
+  isEditingColor: false,
 };
 
-export const useDeviceStore = create<DeviceStore>((set) => ({
+export const useDeviceStore = create<DeviceStore>((set, get) => ({
   ...initialState,
 
   setConnection: (connected, name = null, address = null) =>
@@ -72,11 +75,18 @@ export const useDeviceStore = create<DeviceStore>((set) => ({
   setConnecting: (connecting) => set({ connecting }),
 
   setState: (state) =>
-    set((prev) => ({
-      ...prev,
-      ...state,
-      color: state.color ? { ...prev.color, ...state.color } : prev.color,
-    })),
+    set((prev) => {
+      // If editing color, don't update color from external source (WebSocket)
+      const newColor = state.color && !get().isEditingColor
+        ? { ...prev.color, ...state.color }
+        : prev.color;
+
+      return {
+        ...prev,
+        ...state,
+        color: newColor,
+      };
+    }),
 
   setModes: (modes) => set({ modes }),
 
@@ -84,5 +94,8 @@ export const useDeviceStore = create<DeviceStore>((set) => ({
 
   setPending: (pending) => set({ pendingCommand: pending }),
 
+  setEditingColor: (editing) => set({ isEditingColor: editing }),
+
   reset: () => set(initialState),
 }));
+

@@ -88,9 +88,10 @@ function ChannelSlider({ label, value, onChange, color, disabled }: ChannelSlide
 }
 
 export function ColorPicker() {
-  const { color, connected, setError } = useDeviceStore();
+  const { color, connected, setError, setState, setEditingColor } = useDeviceStore();
   const [localColor, setLocalColor] = useState<Color>(color);
   const debounceRef = useRef<number | null>(null);
+  const editingTimeoutRef = useRef<number | null>(null);
 
   // Sync with store when external update comes
   useEffect(() => {
@@ -101,28 +102,43 @@ export function ColorPicker() {
     async (newColor: Color) => {
       if (!connected) return;
 
+      // Update the store directly (this will work because isEditingColor is true)
+      setState({ color: newColor });
+
       try {
         await controlApi.setColor(newColor);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to set color');
       }
     },
-    [connected, setError]
+    [connected, setError, setState]
   );
 
   const handleColorChange = useCallback(
     (newColor: Color) => {
+      // Mark as editing in the global store to prevent WebSocket from overwriting
+      setEditingColor(true);
       setLocalColor(newColor);
 
-      // Debounce API calls
+      // Clear any existing timeouts
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
+      if (editingTimeoutRef.current) {
+        clearTimeout(editingTimeoutRef.current);
+      }
+
+      // Debounce API calls
       debounceRef.current = window.setTimeout(() => {
         sendColor(newColor);
       }, 200);
+
+      // Reset editing flag after a longer delay to allow for API response
+      editingTimeoutRef.current = window.setTimeout(() => {
+        setEditingColor(false);
+      }, 2000);
     },
-    [sendColor]
+    [sendColor, setEditingColor]
   );
 
   const handleHexChange = useCallback(
