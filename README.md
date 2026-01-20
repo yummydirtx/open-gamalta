@@ -78,6 +78,23 @@ gamalta> quit
 Disconnected. Goodbye!
 ```
 
+## Web Interface
+
+A web-based control interface is available in the `web/` directory, featuring a React frontend with Material UI and a FastAPI backend.
+
+### Quick Start
+
+```bash
+cd web
+make install    # Install all dependencies
+make backend    # Terminal 1: Start backend on :8080
+make frontend   # Terminal 2: Start frontend on :5173
+```
+
+Then open http://localhost:5173 in your browser.
+
+See [`web/README.md`](web/README.md) for full documentation including API endpoints and WebSocket protocol.
+
 ## API Reference
 
 ### GamaltaClient

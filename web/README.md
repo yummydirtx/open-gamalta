@@ -60,6 +60,17 @@ npm run dev
 
 The frontend will be available at `http://localhost:5173`
 
+### Using Make (recommended)
+
+A Makefile is provided for convenience:
+
+```bash
+make install    # Install all dependencies
+make backend    # Start backend server
+make frontend   # Start frontend dev server
+make help       # Show all available commands
+```
+
 ## API Endpoints
 
 ### Device Management

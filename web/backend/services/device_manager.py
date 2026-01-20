@@ -33,6 +33,7 @@ class DeviceManager:
     def __init__(self):
         self._client: GamaltaClient | None = None
         self._lock = asyncio.Lock()
+        self._scan_lock = asyncio.Lock()
         self._state_callbacks: list[StateCallback] = []
         self._polling_task: asyncio.Task | None = None
         self._device_address: str | None = None
@@ -40,8 +41,13 @@ class DeviceManager:
 
     @property
     def is_connected(self) -> bool:
-        """Check if connected to a device."""
-        return self._client is not None and self._client.is_connected
+        """Check if connected to a device.
+
+        Uses tracked state (_device_address) rather than _client.is_connected
+        which can be unreliable. This ensures frontends see consistent
+        connection state across page reloads.
+        """
+        return self._client is not None and self._device_address is not None
 
     @property
     def device_address(self) -> str | None:
@@ -69,9 +75,16 @@ class DeviceManager:
 
         Returns:
             List of dicts with 'address' and 'name' keys.
+
+        Raises:
+            RuntimeError: If a scan is already in progress.
         """
-        devices = await scan_for_devices(name_filter="Gamalta", timeout=timeout)
-        return [{"address": d.address, "name": d.name or "Unknown"} for d in devices]
+        if self._scan_lock.locked():
+            raise RuntimeError("Scan already in progress")
+
+        async with self._scan_lock:
+            devices = await scan_for_devices(name_filter="Gamalta", timeout=timeout)
+            return [{"address": d.address, "name": d.name or "Unknown"} for d in devices]
 
     async def connect(self, address: str | None = None) -> str:
         """
@@ -88,10 +101,16 @@ class DeviceManager:
             ConnectionError: If connection fails.
         """
         async with self._lock:
-            # Disconnect existing connection
-            if self._client and self._client.is_connected:
-                await self._client.disconnect()
+            # Always clean up existing client to prevent orphaned connections
+            # Don't rely on is_connected which can be unreliable
+            if self._client:
+                try:
+                    await self._client.disconnect()
+                except Exception:
+                    pass  # Ignore errors during cleanup
                 self._client = None
+                self._device_address = None
+                self._device_name = None
 
             self._client = GamaltaClient()
             await self._client.connect(address=address)
@@ -103,8 +122,9 @@ class DeviceManager:
             # Start polling for state changes
             self._start_polling()
 
-            # Broadcast connection state
+            # Broadcast connection state and initial device state
             await self._broadcast_connection(True)
+            await self._broadcast_state()
 
             return self._device_name
 

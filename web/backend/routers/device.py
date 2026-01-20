@@ -31,6 +31,8 @@ async def scan_devices(
         return ScanResponse(
             devices=[DeviceInfo(address=d["address"], name=d["name"]) for d in devices]
         )
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Scan failed: {e}")
 
