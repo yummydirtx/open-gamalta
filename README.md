@@ -1,22 +1,46 @@
+<div align="center">
+
 # Open-Gamalta
 
-Open source Python library for controlling Gamalta Bluetooth smart aquarium lights.
+**Open source Python library for controlling Gamalta Bluetooth smart aquarium lights**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+[Features](#features) · [Installation](#installation) · [Quick Start](#quick-start) · [Web Interface](#web-interface) · [API Reference](#api-reference)
+
+</div>
+
+---
 
 ## Features
 
-- **Full Protocol Support**: Power, color (RGBWC), brightness, modes, and lightning effects
-- **Async-First**: Built on `asyncio` for modern Python applications
-- **Clean API**: Simple, intuitive interface with type hints throughout
-- **Auto-Discovery**: Automatically finds Gamalta devices
-- **Extensible**: Modular architecture for easy customization
+| Feature | Description |
+|---------|-------------|
+| **Full Protocol Support** | Power, color (RGBWC), brightness, modes, and lightning effects |
+| **Async-First** | Built on `asyncio` for modern Python applications |
+| **Clean API** | Simple, intuitive interface with type hints throughout |
+| **Auto-Discovery** | Automatically finds Gamalta devices via BLE scanning |
+| **Web Interface** | React + FastAPI web control panel included |
+
+## Requirements
+
+- Python 3.10 or higher
+- Bluetooth Low Energy (BLE) adapter
+- Linux, macOS, or Windows
 
 ## Installation
 
 ```bash
-# From source (development)
+# Clone the repository
+git clone https://github.com/yummydirtx/open-gamalta.git
+cd open-gamalta
+
+# Install in development mode
 pip install -e .
 
-# Or just install dependencies
+# Or install dependencies only
 pip install bleak
 ```
 
@@ -27,14 +51,10 @@ import asyncio
 from gamalta import GamaltaClient, Mode
 
 async def main():
-    # Auto-discover and connect
     async with GamaltaClient() as light:
-        # Basic control
         await light.power_on()
         await light.set_brightness(75)
         await light.set_color(255, 100, 0)  # Warm orange
-        
-        # Use a scene
         await light.set_mode(Mode.CORAL_REEF)
 
 asyncio.run(main())
@@ -42,21 +62,21 @@ asyncio.run(main())
 
 ## Examples
 
-Several examples are included in the `examples/` directory:
+The `examples/` directory contains ready-to-run demos:
 
-- **`cli.py`** - Interactive command-line controller for testing
-- **`basic_control.py`** - Simple connection and control demo
-- **`color_cycle.py`** - Rainbow color cycling
-- **`discover.py`** - Device discovery and BLE service listing  
-- **`lightning_demo.py`** - Lightning storm effect demo
+| Example | Description |
+|---------|-------------|
+| `cli.py` | Interactive command-line controller |
+| `basic_control.py` | Simple connection and control demo |
+| `color_cycle.py` | Rainbow color cycling animation |
+| `discover.py` | Device discovery and BLE service listing |
+| `lightning_demo.py` | Lightning storm effect demo |
 
 ### CLI Controller
 
 ```bash
 python examples/cli.py
 ```
-
-This provides an interactive interface for testing all light features:
 
 ```
 gamalta> on
@@ -73,16 +93,11 @@ gamalta> coral
 
 gamalta> lightning
 ✓ Lightning preview triggered
-
-gamalta> quit
-Disconnected. Goodbye!
 ```
 
 ## Web Interface
 
-A web-based control interface is available in the `web/` directory, featuring a React frontend with Material UI and a FastAPI backend.
-
-### Quick Start
+A full-featured web control panel is included with React frontend and FastAPI backend.
 
 ```bash
 cd web
@@ -91,9 +106,9 @@ make backend    # Terminal 1: Start backend on :8080
 make frontend   # Terminal 2: Start frontend on :5173
 ```
 
-Then open http://localhost:5173 in your browser.
+Open http://localhost:5173 in your browser.
 
-See [`web/README.md`](web/README.md) for full documentation including API endpoints and WebSocket protocol.
+See [`web/README.md`](web/README.md) for full documentation.
 
 ## API Reference
 
@@ -107,7 +122,7 @@ from gamalta import GamaltaClient
 client = GamaltaClient()
 
 # Connection
-await client.connect()              # Auto-discover and connect
+await client.connect()               # Auto-discover and connect
 await client.connect(address="...")  # Connect to specific device
 await client.disconnect()
 
@@ -119,8 +134,8 @@ await client.power_off()
 await client.set_color(r, g, b)
 await client.set_color(r, g, b, warm_white=100, cool_white=50)
 
-# Brightness
-await client.set_brightness(75)  # 0-100%
+# Brightness (0-100%)
+await client.set_brightness(75)
 
 # Modes
 await client.set_mode(Mode.MANUAL)
@@ -137,6 +152,7 @@ await client.configure_lightning(config)
 
 ```python
 from gamalta import Color, LightningConfig, Mode, Day
+from datetime import time
 
 # Color with validation
 color = Color(255, 100, 0)
@@ -156,7 +172,7 @@ config = LightningConfig(
 
 ## Protocol Documentation
 
-See the `documentation/` directory for detailed protocol specifications:
+The `documentation/` directory contains detailed protocol specifications:
 
 - `GamaltaProtocolLightning.md` - Lightning effect commands
 - `scenes_extension.md` - Modes and scene configuration
@@ -164,21 +180,35 @@ See the `documentation/` directory for detailed protocol specifications:
 
 ## Troubleshooting
 
-### Device Not Found
+<details>
+<summary><strong>Device Not Found</strong></summary>
 
 - Ensure the light is powered on
-- **Close any mobile apps** connected to the light (it only supports one connection)
-- Try toggling Bluetooth off/on on your computer
+- **Close any mobile apps** connected to the light (BLE supports only one connection)
+- Toggle Bluetooth off/on on your computer
+- Check that your BLE adapter is functioning
 
-### Commands Ignored
+</details>
+
+<details>
+<summary><strong>Commands Ignored</strong></summary>
 
 - The handshake must complete within a few seconds of connecting
 - Commands are ignored if the sequence number is duplicated
+- Ensure no other application is connected to the device
 
-## License
-
-MIT License - see LICENSE file for details.
+</details>
 
 ## Contributing
 
-Contributions welcome! This is a reverse-engineered protocol, so additional findings and improvements are appreciated.
+Contributions are welcome! This is a reverse-engineered protocol, so additional findings and improvements are appreciated.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/improvement`)
+3. Commit your changes (`git commit -am 'Add new feature'`)
+4. Push to the branch (`git push origin feature/improvement`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
