@@ -88,7 +88,7 @@ function ChannelSlider({ label, value, onChange, color, disabled }: ChannelSlide
 }
 
 export function ColorPicker() {
-  const { color, connected, setError, setState, setEditingColor } = useDeviceStore();
+  const { color, connected, setError, setColor, setEditingColor } = useDeviceStore();
   const [localColor, setLocalColor] = useState<Color>(color);
   const debounceRef = useRef<number | null>(null);
   const editingTimeoutRef = useRef<number | null>(null);
@@ -102,8 +102,8 @@ export function ColorPicker() {
     async (newColor: Color) => {
       if (!connected) return;
 
-      // Update the store directly (this will work because isEditingColor is true)
-      setState({ color: newColor });
+      // Update the store directly using setColor (bypasses isEditingColor check)
+      setColor(newColor);
 
       try {
         await controlApi.setColor(newColor);
@@ -111,7 +111,7 @@ export function ColorPicker() {
         setError(e instanceof Error ? e.message : 'Failed to set color');
       }
     },
-    [connected, setError, setState]
+    [connected, setError, setColor]
   );
 
   const handleColorChange = useCallback(

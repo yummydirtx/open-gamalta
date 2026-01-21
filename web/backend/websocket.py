@@ -13,14 +13,16 @@ class ConnectionManager:
         self.active_connections: list[WebSocket] = []
         self._broadcast_queue: asyncio.Queue = asyncio.Queue()
         self._broadcast_task: asyncio.Task | None = None
+        # Persist a single callback reference for proper add/remove deduplication
+        self._state_callback = self._on_state_update
 
     async def connect(self, websocket: WebSocket) -> None:
         """Accept a new WebSocket connection."""
         await websocket.accept()
         self.active_connections.append(websocket)
 
-        # Register for state updates from device manager
-        device_manager.add_state_callback(self._on_state_update)
+        # Register for state updates from device manager (uses persistent callback reference)
+        device_manager.add_state_callback(self._state_callback)
 
         # Start broadcast task if not running
         if self._broadcast_task is None or self._broadcast_task.done():
@@ -49,7 +51,7 @@ class ConnectionManager:
 
         # Remove callback if no more connections
         if not self.active_connections:
-            device_manager.remove_state_callback(self._on_state_update)
+            device_manager.remove_state_callback(self._state_callback)
             if self._broadcast_task:
                 self._broadcast_task.cancel()
                 self._broadcast_task = None

@@ -20,7 +20,7 @@ import {
   keyframes,
   alpha,
 } from '@mui/material';
-import { FlashOn, ExpandMore, ExpandLess, Schedule } from '@mui/icons-material';
+import { FlashOn, ExpandMore, Schedule } from '@mui/icons-material';
 import { useDeviceStore } from '../stores/deviceStore';
 import { effectsApi } from '../api/client';
 
@@ -342,7 +342,16 @@ export function LightningControls() {
                         disabled={!connected || !enabled}
                         size="small"
                         sx={{
-                          display: 'none',
+                          // Visually hidden but accessible for screen readers and keyboard
+                          position: 'absolute',
+                          width: 1,
+                          height: 1,
+                          padding: 0,
+                          margin: -1,
+                          overflow: 'hidden',
+                          clip: 'rect(0, 0, 0, 0)',
+                          whiteSpace: 'nowrap',
+                          border: 0,
                         }}
                       />
                     }
@@ -352,6 +361,7 @@ export function LightningControls() {
                       px: 1.5,
                       py: 0.75,
                       borderRadius: 2,
+                      position: 'relative',
                       background: selectedDays.includes(day.key)
                         ? alpha('#fbbf24', 0.2)
                         : 'rgba(255, 255, 255, 0.05)',
@@ -364,6 +374,11 @@ export function LightningControls() {
                       '&:hover': {
                         borderColor:
                           !connected || !enabled ? undefined : alpha('#fbbf24', 0.3),
+                      },
+                      '&:focus-within': {
+                        outline: '2px solid',
+                        outlineColor: alpha('#fbbf24', 0.6),
+                        outlineOffset: 2,
                       },
                       '& .MuiFormControlLabel-label': {
                         fontSize: '0.8rem',

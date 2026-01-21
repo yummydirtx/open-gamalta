@@ -79,7 +79,7 @@ async def health():
 def run():
     """Run the server (for use as entry point)."""
     uvicorn.run(
-        "web.backend.main:app",
+        "backend.main:app",
         host=settings.host,
         port=settings.port,
         reload=True,

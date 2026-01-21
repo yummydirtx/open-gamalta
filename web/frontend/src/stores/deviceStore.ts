@@ -41,6 +41,7 @@ interface DeviceStore {
   setError: (error: string | null) => void;
   setPending: (pending: boolean) => void;
   setEditingColor: (editing: boolean) => void;
+  setColor: (color: Color) => void;  // Direct color setter for UI-driven updates
   reset: () => void;
 }
 
@@ -76,14 +77,19 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
 
   setState: (state) =>
     set((prev) => {
+      // Build the new state, excluding color from spread if editing
+      const { color: stateColor, ...restState } = state;
+
       // If editing color, don't update color from external source (WebSocket)
-      const newColor = state.color && !get().isEditingColor
-        ? { ...prev.color, ...state.color }
+      // This action is only called by WebSocket handler, so it's safe to block
+      // during editing. UI components should use setColor directly.
+      const newColor = stateColor && !get().isEditingColor
+        ? { ...prev.color, ...stateColor }
         : prev.color;
 
       return {
         ...prev,
-        ...state,
+        ...restState,
         color: newColor,
       };
     }),
@@ -95,6 +101,9 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
   setPending: (pending) => set({ pendingCommand: pending }),
 
   setEditingColor: (editing) => set({ isEditingColor: editing }),
+
+  // Direct color setter for UI-driven updates (bypasses isEditingColor check)
+  setColor: (color) => set((prev) => ({ ...prev, color: { ...prev.color, ...color } })),
 
   reset: () => set(initialState),
 }));

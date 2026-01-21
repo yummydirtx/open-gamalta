@@ -6,12 +6,21 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useDeviceStore } from '../stores/deviceStore';
 import type { WSMessage } from '../types/device';
 
-const WS_URL = 'ws://localhost:8080/ws';
+// Build WebSocket URL from window.location or env var
+const getWsUrl = (): string => {
+  if (import.meta.env.VITE_WS_URL) {
+    return import.meta.env.VITE_WS_URL;
+  }
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${window.location.host}/ws`;
+};
+
 const RECONNECT_DELAY = 3000;
 
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
+  const isManuallyClosed = useRef<boolean>(false);
 
   const { setConnection, setState, setError } = useDeviceStore();
 
@@ -20,7 +29,8 @@ export function useWebSocket() {
       return;
     }
 
-    const ws = new WebSocket(WS_URL);
+    isManuallyClosed.current = false;
+    const ws = new WebSocket(getWsUrl());
 
     ws.onopen = () => {
       console.log('WebSocket connected');
@@ -65,14 +75,17 @@ export function useWebSocket() {
     };
 
     ws.onclose = () => {
-      console.log('WebSocket disconnected, reconnecting...');
+      console.log('WebSocket disconnected');
       wsRef.current = null;
 
-      // Schedule reconnect
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
+      // Only schedule reconnect if not manually closed
+      if (!isManuallyClosed.current) {
+        console.log('Scheduling reconnect...');
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+        }
+        reconnectTimeoutRef.current = window.setTimeout(connect, RECONNECT_DELAY);
       }
-      reconnectTimeoutRef.current = window.setTimeout(connect, RECONNECT_DELAY);
     };
 
     ws.onerror = (error) => {
@@ -83,6 +96,7 @@ export function useWebSocket() {
   }, [setConnection, setState, setError]);
 
   const disconnect = useCallback(() => {
+    isManuallyClosed.current = true;
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;

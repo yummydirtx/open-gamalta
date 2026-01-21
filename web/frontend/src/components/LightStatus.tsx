@@ -2,6 +2,7 @@
  * Visual light status display showing current color and state.
  */
 
+import type { ReactElement } from 'react';
 import { Box, Typography, Paper, Chip, Stack } from '@mui/material';
 import {
   Power,
@@ -15,7 +16,7 @@ import {
 } from '@mui/icons-material';
 import { useDeviceStore } from '../stores/deviceStore';
 
-const MODE_ICONS: Record<string, React.ReactNode> = {
+const MODE_ICONS: Record<string, ReactElement> = {
   MANUAL: <Tune fontSize="small" />,
   SUNSYNC: <WbSunny fontSize="small" />,
   CORAL_REEF: <Waves fontSize="small" />,

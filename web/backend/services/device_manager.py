@@ -10,7 +10,7 @@ from datetime import datetime
 
 from gamalta import GamaltaClient
 from gamalta.types import Mode, Color, LightningConfig
-from gamalta.exceptions import GamaltaError, NotConnectedError, DeviceNotFoundError
+from gamalta.exceptions import NotConnectedError
 from gamalta.transport.ble import scan_for_devices
 
 from ..config import settings
@@ -107,7 +107,8 @@ class DeviceManager:
                 try:
                     await self._client.disconnect()
                 except Exception:
-                    pass  # Ignore errors during cleanup
+                    # Best-effort cleanup: ignore disconnect errors during reconnection.
+                    pass
                 self._client = None
                 self._device_address = None
                 self._device_name = None
@@ -115,8 +116,16 @@ class DeviceManager:
             self._client = GamaltaClient()
             await self._client.connect(address=address)
 
-            # Store connection info
-            self._device_address = address
+            # Determine and store resolved connection info
+            resolved_address = address
+            if resolved_address is None:
+                # Try to read the address from the client or its underlying transport
+                resolved_address = getattr(self._client, "address", None)
+                if resolved_address is None:
+                    transport = getattr(self._client, "transport", None)
+                    resolved_address = getattr(transport, "address", None) if transport is not None else None
+
+            self._device_address = resolved_address
             self._device_name = await self._client.query_name() or "Gamalta"
 
             # Start polling for state changes
@@ -136,6 +145,7 @@ class DeviceManager:
                 try:
                     await self._client.disconnect()
                 except Exception:
+                    # Best-effort cleanup: ignore disconnect errors during shutdown.
                     pass
                 self._client = None
 
@@ -293,6 +303,7 @@ class DeviceManager:
             try:
                 await callback(message)
             except Exception:
+                # Best-effort broadcast: ignore callback errors to not block other subscribers.
                 pass
 
     def _format_state(self, state: dict) -> dict:

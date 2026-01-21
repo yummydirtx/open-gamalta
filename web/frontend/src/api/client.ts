@@ -11,10 +11,17 @@ import type {
   Color,
 } from '../types/device';
 
-const API_BASE = 'http://localhost:8080/api';
+// Build API base URL from env var or use relative path (works with reverse proxy)
+const getApiBase = (): string => {
+  if (import.meta.env.VITE_API_BASE) {
+    return import.meta.env.VITE_API_BASE;
+  }
+  // Use relative path - works when served behind reverse proxy or same origin
+  return '/api';
+};
 
 const api = axios.create({
-  baseURL: API_BASE,
+  baseURL: getApiBase(),
   timeout: 10000,
 });
 

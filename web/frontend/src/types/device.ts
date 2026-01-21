@@ -77,7 +77,15 @@ export interface WSErrorMessage {
   };
 }
 
-export type WSMessage = WSStateMessage | WSConnectionMessage | WSErrorMessage;
+export interface WSSceneTickMessage {
+  type: 'scene_tick';
+  payload: {
+    scene: string;
+    progress: number;
+  };
+}
+
+export type WSMessage = WSStateMessage | WSConnectionMessage | WSErrorMessage | WSSceneTickMessage;
 
 // API response types
 export interface ScanResponse {

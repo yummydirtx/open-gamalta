@@ -2,6 +2,7 @@
  * Premium mode selector with stunning gradient cards.
  */
 
+import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import {
   Box,
@@ -27,7 +28,7 @@ import { modesApi } from '../api/client';
 import type { ModeInfo } from '../types/device';
 
 // Mode configurations with colors
-const MODE_CONFIG: Record<string, { icon: React.ReactNode; gradient: string; color: string }> = {
+const MODE_CONFIG: Record<string, { icon: ReactNode; gradient: string; color: string }> = {
   MANUAL: {
     icon: <Tune />,
     gradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',

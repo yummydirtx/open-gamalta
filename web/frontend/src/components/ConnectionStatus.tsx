@@ -69,7 +69,7 @@ export function ConnectionStatus() {
 
     try {
       const result = await deviceApi.scan(5.0);
-      setDevices(result.devices);
+      setDevices(result.devices ?? []);
     } catch (e) {
       setScanError(e instanceof Error ? e.message : 'Scan failed');
     } finally {
