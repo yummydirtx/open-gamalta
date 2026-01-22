@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gamalta-web"
+version = "0.1.0"
+description = "Web frontend for Gamalta BLE aquarium lights"
+requires-python = ">=3.10"
+
+dependencies = [
+    "gamalta",
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "websockets>=12.0",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "httpx>=0.25.0",
+]
+
+[project.scripts]
+gamalta-web = "backend.main:run"
+
+[tool.setuptools.packages.find]
+include = ["backend*"]
