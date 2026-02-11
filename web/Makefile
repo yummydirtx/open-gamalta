@@ -1,9 +1,9 @@
-.PHONY: install install-backend install-frontend dev backend frontend build clean help
+.PHONY: install install-backend install-frontend ensure-venv dev backend frontend build test typecheck lint clean help
 
-# Use project venv if it exists, otherwise fall back to system python
-VENV := $(shell [ -d ../.venv ] && echo "../.venv/bin/" || echo "")
-PYTHON := $(VENV)python
-PIP := $(VENV)pip
+VENV_DIR := ../.venv
+PYTHON := $(VENV_DIR)/bin/python
+PIP := $(VENV_DIR)/bin/pip
+PYTHON_BOOTSTRAP := $(shell command -v python3 || command -v python)
 
 # Default target
 help:
@@ -30,8 +30,16 @@ help:
 install: install-backend install-frontend
 	@echo "All dependencies installed successfully!"
 
+# Create virtual environment if missing
+ensure-venv:
+	@if [ ! -x "$(PYTHON)" ]; then \
+		echo "Creating virtual environment at $(VENV_DIR)"; \
+		$(PYTHON_BOOTSTRAP) -m venv $(VENV_DIR); \
+	fi
+
 # Install backend dependencies
-install-backend:
+install-backend: ensure-venv
+	$(PIP) install -e ..
 	$(PIP) install -e ".[dev]"
 
 # Install frontend dependencies
@@ -39,7 +47,7 @@ install-frontend:
 	cd frontend && npm install
 
 # Start backend server
-backend:
+backend: ensure-venv
 	$(PYTHON) -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8080
 
 # Start frontend dev server
@@ -62,11 +70,11 @@ build:
 	cd frontend && npm run build
 
 # Run backend tests
-test:
+test: ensure-venv
 	$(PYTHON) -m pytest
 
 # Type check backend
-typecheck:
+typecheck: ensure-venv
 	$(PYTHON) -m mypy backend
 
 # Lint frontend
